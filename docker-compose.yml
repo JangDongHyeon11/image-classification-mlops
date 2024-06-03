@@ -131,6 +131,93 @@ services:
       postgres:
         condition: service_healthy
 
+  # model monitoring
+  evidently:
+    platform: linux/arm64
+    container_name: evidently
+    build:
+      context: ./services/evidently
+      dockerfile: Dockerfile
+      args:
+        EVIDENTLY_PORT: ${EVIDENTLY_PORT}
+    env_file:
+      - .env
+    networks:
+      - mlops_network
+    ports:
+      - "${EVIDENTLY_PORT}:${EVIDENTLY_PORT}"
+    volumes:
+      - evidently_data:/service/${EVIDENTLY_WORKSPACE_NAME}
+
+  # reverse proxy
+  nginx:
+    platform: linux/arm64
+    container_name: nginx
+    restart: always
+    build:
+      context: ./services/nginx
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    networks:
+      - mlops_network
+    depends_on:
+      dl_service:
+        condition: service_healthy
+
+  # worker / agent / automation
+  prefect_worker:
+    platform: linux/arm64
+    container_name: prefect_worker
+    build:
+      context: ./services/prefect_worker
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - PREFECT_API_URL=http://prefect:${PREFECT_PORT}/api
+      - EVIDENTLY_URL=http://evidently:${EVIDENTLY_PORT}
+      - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect_user:admin1234@postgres:${POSTGRES_PORT}/prefect_pg_db
+      - DB_CONNECTION_URL=postgresql://dlservice_user:admin1234@postgres:${POSTGRES_PORT}/dlservice_pg_db
+      - CENTRAL_STORAGE_PATH=/service/central_storage
+    networks:
+      - mlops_network
+    volumes:
+      - central_storage:/service/central_storage
+    depends_on:
+      prefect:
+        condition: service_healthy
+
+  # model deployment / model service
+  dl_service:
+    platform: linux/x86_64
+    container_name: dl_service
+    restart: always
+    build:
+      context: ./services/dl_service
+      dockerfile: Dockerfile
+      args:
+        DL_SERVICE_PORT: ${DL_SERVICE_PORT}
+    env_file:
+      - .env
+    environment:
+      - CENTRAL_STORAGE_PATH=/service/central_storage
+      - DB_CONNECTION_URL=postgresql://dlservice_user:admin1234@postgres:${POSTGRES_PORT}/dlservice_pg_db
+    networks:
+      - mlops_network
+    volumes:
+      - central_storage:/service/central_storage
+      - ./services/dl_service/app/:/service/app/
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl http://127.0.0.1:$${DL_SERVICE_PORT}/health_check"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   ray:
     platform: linux/arm64
     container_name: ray-head
@@ -240,4 +327,8 @@ volumes:
   mlflow_data:
   prefect_data:
   pgadmin_data:
+  grafana_data:
+  prometheus_data:
   pgdata:
+  evidently_data:
+  central_storage:

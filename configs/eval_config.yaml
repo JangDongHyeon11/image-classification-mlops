@@ -1,0 +1,15 @@
+dataset:
+  ds_root: /home/Jang/workspace/datasets/
+  ds_name: animals10-dvc
+  dvc_tag: v2.0.0
+  dvc_checkout: true
+
+evaluate:
+  subset: test
+  model_name: classifier_model_v1
+  model_metadata_file_path: /home/Jang/workspace/models/classifier_model_v1.yaml
+  mlflow:
+    exp_name: Evaluate Animals10 classifier
+    exp_desc: Evaluate a classifier model
+    exp_tags:
+      dataset: Animals10

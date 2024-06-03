@@ -7,12 +7,10 @@ from ray import train
 from ray.train import Trainer
 import hydra
 from omegaconf import DictConfig
-from jobs.model import initialize_model, save_model, train_model, upload_model,build_drift_model
-from jobs.dataset import prepare_data_loader, validate_data
-from jobs.deploy import (build_ref_data, save_and_upload_ref_data,
-                           save_and_upload_drift_detectors)
+from jobs.model import initialize_model, save_model, train_model, upload_model,build_drift_model,save_drift_model
+from jobs.dataset import prepare_data_loader, validate_data,build_ref_data,save_ref_data
 from jobs.utils.tf_data_utils import AUGMENTER
-from flows.utils import log_mlflow_info, build_and_log_mlflow_url
+from workflows.utils import log_mlflow_info, build_and_log_mlflow_url
 from prefect import flow, get_run_logger
 from prefect.artifacts import create_link_artifact
 from typing import Dict, Any
@@ -72,9 +70,10 @@ def train_flow(cfg: DictConfig):
 
         model_dir, metadata_file_path = save_model(trained_model, model_cfg,model_uri)
         
-        upload_model(model_uri=model_uri, 
-                    model_name=model_cfg.model_name,
-                    MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI
+        metadata_file_name,model_name =upload_model(model_uri=model_uri, 
+                     model_dir=model_dir,
+                     MLFLOW_TRACKING_URI=MLFLOW_TRACKING_URI,
+                     metadata_file_path=metadata_file_path
                     )
         
         # 드리프트 모델 구축
@@ -82,12 +81,12 @@ def train_flow(cfg: DictConfig):
                                           softmax_layer_idx=drift_cfg.bbsd_layer_idx,
                                           encoding_dims=drift_cfg.uae_encoding_dims)
     
-        save_and_upload_drift_detectors(uae, bbsd, model_cfg=model_cfg)
+        save_drift_model(uae, bbsd, model_cfg=model_cfg)
 
         ref_data_df = build_ref_data(uae, bbsd, dataset_annotation_df, n_sample=drift_cfg.reference_data_n_sample,
                                      classes=model_cfg.classes, img_size=input_shape, batch_size=hparams.batch_size)
         
-        save_and_upload_ref_data(ref_data_df, central_ref_data_dir, model_cfg) 
+        save_ref_data(ref_data_df, central_ref_data_dir, model_cfg) 
 
     create_link_artifact(
         key = 'mlflow-train-run',
@@ -95,7 +94,7 @@ def train_flow(cfg: DictConfig):
         description = "Link to MLflow's training run"
     )
 
-    return model_save_dir, metadata_file_path, metadata_file_name
+    return metadata_file_path, metadata_file_name,model_name
 
 @hydra.main(config_path="configs/", config_name="train_config.yaml")
 def start(cfg: DictConfig):

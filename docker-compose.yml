@@ -17,15 +17,19 @@ services:
         ARCH: aarch64 # aarch64 for Mac M1 | x86_64 for others (mostly)
         JUPYTER_PORT: ${JUPYTER_PORT}
         MLFLOW_ARTIFACT_ROOT: ${MLFLOW_ARTIFACT_ROOT}
+        CENTRAL_STORAGE_PATH: /home/${JUPYTER_USER}/central_storage
         MAIN_CONDA_ENV_NAME: jang
     env_file:
       - .env
     environment:
       - MLFLOW_TRACKING_URI=http://mlflow:${MLFLOW_PORT}
       - PREFECT_API_URL=http://prefect:${PREFECT_PORT}/api
+      - CENTRAL_STORAGE_PATH=/home/${JUPYTER_USER}/central_storage
       - DB_CONNECTION_URL=postgresql://dl_user:admin1234@postgres:${POSTGRES_PORT}/dl_pg_db
       - DB_PREDICTION_TABLE_NAME=predictions
       - DB_API_LOG_TABLE_NAME=api_log
+      - RAY_DASHBOARD_HOST=ray
+      - RAY_DASHBOARD_PORT=8265
     networks:
       - mlops_network
     ports:
@@ -178,7 +182,7 @@ services:
       - PREFECT_API_URL=http://prefect:${PREFECT_PORT}/api
       - EVIDENTLY_URL=http://evidently:${EVIDENTLY_PORT}
       - PREFECT_API_DATABASE_CONNECTION_URL=postgresql+asyncpg://prefect_user:admin1234@postgres:${POSTGRES_PORT}/prefect_pg_db
-      - DB_CONNECTION_URL=postgresql://dlservice_user:admin1234@postgres:${POSTGRES_PORT}/dlservice_pg_db
+      - DB_CONNECTION_URL=postgresql://dl_user:admin1234@postgres:${POSTGRES_PORT}/dl_pg_db
       - CENTRAL_STORAGE_PATH=/service/central_storage
     networks:
       - mlops_network
@@ -202,7 +206,7 @@ services:
       - .env
     environment:
       - CENTRAL_STORAGE_PATH=/service/central_storage
-      - DB_CONNECTION_URL=postgresql://dlservice_user:admin1234@postgres:${POSTGRES_PORT}/dlservice_pg_db
+      - DB_CONNECTION_URL=postgresql://dl_user:admin1234@postgres:${POSTGRES_PORT}/dl_pg_db
     networks:
       - mlops_network
     volumes:
@@ -228,7 +232,7 @@ services:
         MLFLOW_ARTIFACT_ROOT: ${MLFLOW_ARTIFACT_ROOT}
         # for amd64 (x86_64) please leave ARCH_TRAILING_IMG_NAME empty
         ARCH_TRAILING_IMG_NAME: "-aarch64"
-    shm_size: "2gb"
+    shm_size: "4gb"
     # NOTE: if you change RAY_METRICS_EXPORT_PORT in .env,
     # you need to change the port in prometheus.yaml too
     env_file:
@@ -240,6 +244,8 @@ services:
       - RAY_GRAFANA_IFRAME_HOST=http://localhost:${GRAFANA_PORT}
       - MLFLOW_TRACKING_URI=http://mlflow:5050
       # - DB_CONNECTION_URL=postgresql://spark_user:admin1234@postgres:${POSTGRES_PORT}/spark_pg_db
+    networks:
+      - mlops_network
     ports:
       - ${RAY_DASHBOARD_PORT}:${RAY_DASHBOARD_PORT}
     healthcheck:
@@ -248,7 +254,7 @@ services:
       timeout: 10s
       retries: 10
     volumes:
-      - mlflow-data:${MLFLOW_ARTIFACT_ROOT}
+      - mlflow_data:${MLFLOW_ARTIFACT_ROOT}
 
   # overall monitoring & dashboards
   grafana:

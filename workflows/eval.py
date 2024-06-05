@@ -2,9 +2,9 @@ import os
 import yaml
 import mlflow
 import pandas as pd
-from jobs.model import evaluate_model, load_model
-from jobs.dataset import prepare_data_loader
-from jobs.utils.tf_data_utils import AUGMENTER
+from tasks.model import evaluate_model, load_model
+from tasks.dataset import prepare_data_loader
+from tasks.utils.tf_data_utils import AUGMENTER
 from workflows.utils import log_mlflow_info, build_and_log_mlflow_url
 from prefect import flow, get_run_logger
 from prefect.artifacts import create_link_artifact
@@ -48,7 +48,7 @@ def eval_flow(cfg: Dict[str, Any], model_name: str, metadata_file_path: str):
         description = "Link to MLflow's evaluation run"       
     )
     
-@hydra.main(config_path="configs/", config_name="eval_config.yaml")
+@hydra.main(config_path="configs/eval", config_name="eval_config.yaml")
 def start(cfg: DictConfig):
     evaluate=cfg.evaluate
     eval_flow(cfg,evaluate.model_name,evaluate.model_metadata_file_path)

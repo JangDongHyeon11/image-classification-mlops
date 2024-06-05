@@ -28,21 +28,3 @@ model:
     bbsd_layer_idx: -1
     reference_data_suffix: _ref_data
     reference_data_n_sample: 5000
-
-dataset:
-  ds_root: /home/Jang/workspace/datasets/
-  ds_name: animals10-v2
-  dvc_tag: v2.0.0
-  dvc_checkout: true
-
-train:
-  num_workers: 2
-  hparams:
-    epochs: 4
-    batch_size: 32
-    init_lr: 0.001
-  mlflow:
-    exp_name: Train classifier model
-    exp_desc: Train a classifier model
-    exp_tags:
-      dataset: Animals10

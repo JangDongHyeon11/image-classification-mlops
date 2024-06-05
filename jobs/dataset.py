@@ -10,7 +10,7 @@ from git import Git, GitCommandError
 from prefect import task, get_run_logger
 from deepchecks.vision import classification_dataset_from_directory
 from deepchecks.vision.suites import train_test_validation
-from .utils.tf_data_utils import build_data_pipeline
+from .utils.tf_data import build_data_pipeline
 
 @task(name='prepare_data_loader')
 def prepare_data_loader(dataset_root: str, dataset_name: str, dvc_tag: str, dvc_checkout: bool = True):

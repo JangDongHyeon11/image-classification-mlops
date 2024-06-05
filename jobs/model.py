@@ -62,8 +62,9 @@ def initialize_model(input_size: list, n_classes: int, activation: str = 'softma
 
     return model
 
-@ray.remote
+
 @task(name='train_model')
+@ray.remote
 def train_model(model: tf.keras.models.Model, classes: List[str], repository_path: str, 
                 dataset_annotation_df: pd.DataFrame, img_size: List[int], epochs: int, batch_size: int, 
                 init_lr: float, augmenter: iaa):

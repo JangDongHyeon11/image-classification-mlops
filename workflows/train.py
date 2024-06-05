@@ -4,24 +4,29 @@ import pandas as pd
 from importlib import import_module
 import ray
 from ray import train
-from ray.train import Trainer
+# from ray.train import Trainer
 import hydra
 from omegaconf import DictConfig
 from jobs.model import initialize_model, save_model, train_model, upload_model,build_drift_model,save_drift_model
 from jobs.dataset import prepare_data_loader, validate_data,build_ref_data,save_ref_data
-from jobs.utils.tf_data_utils import AUGMENTER
+from jobs.utils.tf_data import AUGMENTER
 from workflows.utils import log_mlflow_info, build_and_log_mlflow_url
-from prefect import flow, get_run_logger
 from prefect.artifacts import create_link_artifact
 from typing import Dict, Any
+from prefect import flow, get_run_logger
+import json
+from omegaconf import OmegaConf;
+
+config = json.loads(os.getenv("CONFIG"))
+cfg = OmegaConf.create(config)
 
 STORAGE_CL_PATH = os.getenv("CENTRAL_STORAGE_PATH", "/home/Jang/central_storage")
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5050")
+
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-
 @flow(name='train_flow')
-def train_flow(cfg: DictConfig):
+def train_flow():
     logger = get_run_logger()
     central_ref_data_dir = os.path.join(STORAGE_CL_PATH, 'ref_data')
     hparams = cfg.train.hparams
@@ -31,7 +36,7 @@ def train_flow(cfg: DictConfig):
     drift_cfg = model_cfg.drift_detection
     input_shape = (model_cfg.input_size.h, model_cfg.input_size.w)
     num_workers = cfg.train.num_workers
-    artifact_path = cfg.artifact_path
+    artifact_path = cfg.model.artifact_path
     # 모델 구축
     model = initialize_model(input_size=input_shape, n_classes=len(model_cfg.classes),  
                         activation=model_cfg.activation,
@@ -59,16 +64,21 @@ def train_flow(cfg: DictConfig):
         mlflow.set_tags(tags=mlflow_train_cfg.exp_tags)
         mlflow.log_params(hparams)
         mlflow.log_artifact(report_path)
-        
-        trainer = Trainer(backend="tensorflow", num_workers=num_workers)
-        trained_model = trainer.run(train_model.remote,
-                                    model, model_cfg.classes, repository_path, dataset_annotation_df,
-                                    img_size=input_shape, epochs=hparams.epochs,
-                                    batch_size=hparams.batch_size, init_lr=hparams.init_lr,
-                                    augmenter=AUGMENTER)
-        
+        # scaling_config = ScalingConfig(num_workers=2, use_gpu=True)
+        # trainer = Trainer(backend="tensorflow", num_workers=num_workers)
 
-        model_dir, metadata_file_path = save_model(trained_model, model_cfg,model_uri)
+       
+        trained_model = train_model.remote(model=model, classes=model_cfg.classes, repository_path=repository_path, dataset_annotation_df=dataset_annotation_df,img_size=input_shape, epochs=hparams.epochs,batch_size=hparams.batch_size, init_lr=hparams.init_lr,
+                                    augmenter=AUGMENTER)
+        # trained_model = trainer.run(train_model.remote,
+        #                             model, model_cfg.classes, repository_path, dataset_annotation_df,
+        #                             img_size=input_shape, epochs=hparams.epochs,
+        #                             batch_size=hparams.batch_size, init_lr=hparams.init_lr,
+        #                             augmenter=AUGMENTER)
+        
+        trained_obj=ray.get(trained_model)
+        print(trained_obj)
+        model_dir, metadata_file_path = save_model(trained_model, model_cfg)
         
         metadata_file_name,model_name =upload_model(model_uri=model_uri, 
                      model_dir=model_dir,
@@ -96,10 +106,10 @@ def train_flow(cfg: DictConfig):
 
     return metadata_file_path, metadata_file_name,model_name
 
-@hydra.main(config_path="configs/", config_name="train_config.yaml")
-def start(cfg: DictConfig):
+# @hydra.main(config_path="/home/Jang/workspace/configs/train", config_name="config.yaml", version_base=None)
+def start():
     ray.init()  # Ray 초기화
-    train_flow(cfg)
+    train_flow()
     ray.shutdown()   
 if __name__ == "__main__":
     start()

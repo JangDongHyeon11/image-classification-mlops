@@ -1,0 +1,10 @@
+deploy:
+  model_name: classifier_model_v1
+  model_metadata_file_name: classifier_model_v1.yaml
+  uae: uae
+  bbsd: bbsd
+  prefect:
+    work_root: ~/workspace/deploy/evidently_workspaces
+    # this should match the deployment name in prefect.yaml
+    # at the root of the specified repo
+    deployment_name: drift_detection_evidently

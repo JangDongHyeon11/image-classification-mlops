@@ -1,0 +1,7 @@
+eval:
+  subset: test
+  mlflow:
+    exp_name: Evaluate Animals10 classifier
+    exp_desc: Evaluate a classifier model
+    exp_tags:
+      dataset: Animals10

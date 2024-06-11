@@ -1,3 +1,9 @@
 defaults:
-  - model: base
-  - dataset: base
+  - dataset
+  - model
+  - train
+  - eval
+  - deploy
+  - _self_
+
+mode: train

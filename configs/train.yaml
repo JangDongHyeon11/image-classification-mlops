@@ -1,0 +1,11 @@
+train:
+  num_workers: 2
+  hparams:
+    epochs: 1
+    batch_size: 32
+    init_lr: 0.001
+  mlflow:
+    exp_name: Train classifier model
+    exp_desc: Train a classifier model
+    exp_tags:
+      dataset: Animals10

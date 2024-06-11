@@ -1,0 +1,31 @@
+model:
+  model_name: classifier_model_v1
+  model_metadata_file_path: /home/Jang/workspace/models/classifier_model_v1.yaml
+  input_size:
+    w: 50
+    h: 50
+  artifact_path: /jang/model
+  classes:
+    - butterfly
+    - cat
+    - chicken
+    - cow
+    - dog
+    - elephant
+    - horse
+    - sheep
+    - spider
+    - squirrel
+  activation: softmax
+  classifier_type: multi-class
+  layer: classify_head
+  save_dir: /home/Jang/workspace/models/
+  drift_detection:
+    uae_name: uae_v1
+    bbsd_name: bbsd_v1
+    uae_model_suffix: _uae
+    uae_encoding_dims: 128
+    bbsd_model_suffix: _bbsd
+    bbsd_layer_idx: -1
+    reference_data_suffix: _ref_data
+    reference_data_n_sample: 5000

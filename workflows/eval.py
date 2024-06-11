@@ -2,24 +2,26 @@ import os
 import yaml
 import mlflow
 import pandas as pd
-from tasks.model import evaluate_model, load_model
-from tasks.dataset import prepare_data_loader
-from tasks.utils.tf_data_utils import AUGMENTER
+from jobs.model import evaluate_model, load_model
+from jobs.dataset import prepare_data_loader
 from workflows.utils import log_mlflow_info, build_and_log_mlflow_url
 from prefect import flow, get_run_logger
+from omegaconf import DictConfig
 from prefect.artifacts import create_link_artifact
 from typing import Dict, Any
-import hydra
-from omegaconf import DictConfig
+
 
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5050")
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 @flow(name='eval_flow')
-def eval_flow(cfg: Dict[str, Any], model_name: str, metadata_file_path: str):
+def eval_flow(cfg: Dict[str, Any]):
+    print(cfg)
     logger = get_run_logger()
-    eval_cfg = cfg.evaluate
-    mlflow_eval_cfg = cfg.evaluate.mlflow
+    eval_cfg = cfg.eval
+    model_name= cfg.model.model_name
+    metadata_file_path= cfg.model.model_metadata_file_path
+    mlflow_eval_cfg = cfg.eval.mlflow
     ds_cfg = cfg.dataset
     
 
@@ -48,10 +50,9 @@ def eval_flow(cfg: Dict[str, Any], model_name: str, metadata_file_path: str):
         description = "Link to MLflow's evaluation run"       
     )
     
-@hydra.main(config_path="configs/eval", config_name="eval_config.yaml")
 def start(cfg: DictConfig):
-    evaluate=cfg.evaluate
-    eval_flow(cfg,evaluate.model_name,evaluate.model_metadata_file_path)
+    
+    eval_flow(cfg)
    
 if __name__ == "__main__":
     start()

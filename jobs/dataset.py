@@ -3,6 +3,7 @@ import time
 import pandas as pd
 import mlflow
 import tensorflow as tf
+import imgaug.augmenters as iaa
 import numpy as np
 from typing import List, Dict, Union, Tuple, Any
 from dvc.repo import Repo
@@ -22,6 +23,19 @@ def prepare_data_loader(dataset_root: str, dataset_name: str, dvc_tag: str, dvc_
     dataset_annotation_df = pd.read_csv(at_path)
     
     return dataset_path, dataset_annotation_df
+
+@task(name='data_build')
+def data_build(classes: List[str], 
+                dataset_annotation_df: pd.DataFrame, img_size: List[int], batch_size: int, augmenter: iaa):
+    logger = get_run_logger()
+    logger.info('Building data pipelines')
+    
+    train_ds = build_data_pipeline(dataset_annotation_df, classes, 'train', img_size, batch_size, 
+                                   do_augment=True, augmenter=augmenter)
+    valid_ds = build_data_pipeline(dataset_annotation_df, classes, 'valid', img_size, batch_size, 
+                                   do_augment=False, augmenter=None)
+
+    return train_ds,valid_ds
 
 @task(name='validate_data')
 def validate_data(dataset_path: str, save_path: str = 'dataset_val.html', img_ext: str = 'jpeg'):

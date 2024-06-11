@@ -1,0 +1,5 @@
+dataset:
+  ds_root: /home/Jang/workspace/datasets/
+  ds_name: animals10-v2
+  dvc_tag: v2.0.0
+  dvc_checkout: true

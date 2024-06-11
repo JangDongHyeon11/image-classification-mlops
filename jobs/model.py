@@ -1,13 +1,12 @@
 import os
 import yaml
-import shutil
-import ray
 import mlflow
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import seaborn as sns
 import matplotlib.pyplot as plt
+from omegaconf import OmegaConf
 import imgaug.augmenters as iaa
 from typing import List, Dict, Union, Tuple, Any
 from tensorflow.keras.models import load_model, Model
@@ -22,6 +21,9 @@ from typing import List, Dict, Union
 from sklearn.metrics import confusion_matrix, classification_report, roc_auc_score
 from .utils.tf_data import build_data_pipeline
 from .utils.callbacks import MLflowLog
+
+
+
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5050")
 mlflow_client = mlflow.MlflowClient(tracking_uri=MLFLOW_TRACKING_URI)
 
@@ -29,8 +31,13 @@ def build_model_report(y_true, y_pred, class_names):
     report = classification_report(y_true, y_pred, target_names=class_names, output_dict=True)
     return pd.DataFrame(report).T
 
+# def build_model_metadata(model_cfg): 
+#     metadata = model_cfg.copy()
+#     metadata.pop('save_dir')
+#     return metadata
+
 def build_model_metadata(model_cfg): 
-    metadata = model_cfg.copy()
+    metadata = OmegaConf.to_container(model_cfg, resolve=True)
     metadata.pop('save_dir')
     return metadata
 
@@ -40,6 +47,8 @@ def build_figure_from_df(df: pd.DataFrame):
     table = pd.plotting.table(ax, df, loc='center', cellLoc='center')  # where df is your data frame
     plt.show()
     return fig, table
+
+
 
 @task(name='initialize_model')
 def initialize_model(input_size: list, n_classes: int, activation: str = 'softmax',
@@ -64,7 +73,6 @@ def initialize_model(input_size: list, n_classes: int, activation: str = 'softma
 
 
 @task(name='train_model')
-@ray.remote
 def train_model(model: tf.keras.models.Model, classes: List[str], repository_path: str, 
                 dataset_annotation_df: pd.DataFrame, img_size: List[int], epochs: int, batch_size: int, 
                 init_lr: float, augmenter: iaa):
@@ -94,6 +102,9 @@ def train_model(model: tf.keras.models.Model, classes: List[str], repository_pat
     
     # return trained model
     return model
+
+
+
 
 
 @task(name='save_model')
@@ -226,7 +237,7 @@ def build_drift_model(main_model: tf.keras.models.Model, model_input_size: Tuple
 
 
 @task(name='save_drift_model')
-def save_drift_model(uae_model: tf.keras.models.Model, bbsd_model: tf.keras.models.Model, remote_dir: str,
+def save_drift_model(uae_model: tf.keras.models.Model, bbsd_model: tf.keras.models.Model,
                                    model_cfg: Dict[str, Union[str, List[str], List[int]]]):
     logger = get_run_logger()
     uae_model_dir = os.path.join(model_cfg.save_dir, model_cfg.model_name + model_cfg.drift_detection.uae_model_suffix)

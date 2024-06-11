@@ -24,7 +24,6 @@ def deploy_flow(cfg: Dict[str, Any],metadata_file_name: str):
     deploy_prefect_flow(deploy_cfg.prefect.work_root,
                         deploy_cfg.prefect.deployment_name)
 
-@hydra.main(config_path="configs/deploy", config_name="deploy_config.yaml")
 def start(cfg: DictConfig):
     deploy=cfg.deploy
     deploy_flow(cfg,deploy.model_name,deploy.model_metadata_file_path)

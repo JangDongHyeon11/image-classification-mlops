@@ -28,8 +28,6 @@ services:
       - DB_CONNECTION_URL=postgresql://dl_user:admin1234@postgres:${POSTGRES_PORT}/dl_pg_db
       - DB_PREDICTION_TABLE_NAME=predictions
       - DB_API_LOG_TABLE_NAME=api_log
-      - RAY_DASHBOARD_HOST=ray
-      - RAY_DASHBOARD_PORT=8265
     networks:
       - mlops_network
     ports:
@@ -41,6 +39,10 @@ services:
     depends_on:
       - mlflow
       - prefect
+    deploy:
+      resources:
+        limits:
+          memory: 16G # 원하는 메모리 크기로 변경
 
   # ML platform / experiment tracking
   mlflow:
@@ -221,40 +223,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  ray:
-    platform: linux/arm64
-    container_name: ray-head
-    build:
-      context: ./services/ray
-      dockerfile: Dockerfile
-      args:
-        MLFLOW_ARTIFACT_ROOT: ${MLFLOW_ARTIFACT_ROOT}
-        # for amd64 (x86_64) please leave ARCH_TRAILING_IMG_NAME empty
-        ARCH_TRAILING_IMG_NAME: "-aarch64"
-    shm_size: "4gb"
-    # NOTE: if you change RAY_METRICS_EXPORT_PORT in .env,
-    # you need to change the port in prometheus.yaml too
-    env_file:
-      - .env
-    environment:
-      - RAY_GRAFANA_HOST=http://grafana:3000
-      - RAY_PROMETHEUS_HOST=http://prometheus:9090
-      - RAY_PROMETHEUS_NAME=Prometheus
-      - RAY_GRAFANA_IFRAME_HOST=http://localhost:${GRAFANA_PORT}
-      - MLFLOW_TRACKING_URI=http://mlflow:5050
-      # - DB_CONNECTION_URL=postgresql://spark_user:admin1234@postgres:${POSTGRES_PORT}/spark_pg_db
-    networks:
-      - mlops_network
-    ports:
-      - ${RAY_DASHBOARD_PORT}:${RAY_DASHBOARD_PORT}
-    healthcheck:
-      test: ["CMD-SHELL", "ray status"]
-      interval: 10s
-      timeout: 10s
-      retries: 10
-    volumes:
-      - mlflow_data:${MLFLOW_ARTIFACT_ROOT}
 
   # overall monitoring & dashboards
   grafana:

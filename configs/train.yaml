@@ -9,3 +9,5 @@ train:
     exp_desc: Train a classifier model
     exp_tags:
       dataset: Animals10
+      user_name: Jang
+      email: ex.ex.com

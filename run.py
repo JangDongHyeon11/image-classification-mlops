@@ -6,7 +6,6 @@ from omegaconf import DictConfig,OmegaConf;
 @hydra.main(config_path="configs", config_name="config")
 def main(cfg: DictConfig):
     mode = cfg.mode
-    print(cfg[mode])
     if mode == "train":
         module = import_module('workflows.train')
     elif mode == "eval":

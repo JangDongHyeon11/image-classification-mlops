@@ -28,8 +28,6 @@ def train_flow(cfg:DictConfig):
     model_cfg = cfg.model
     drift_cfg = model_cfg.drift_detection
     input_shape = (model_cfg.input_size.h, model_cfg.input_size.w)
-    num_workers = cfg.train.num_workers
-    artifact_path = cfg.model.artifact_path
     # 모델 구축
     model = initialize_model(input_size=input_shape, n_classes=len(model_cfg.classes),  
                         activation=model_cfg.activation,
@@ -51,9 +49,9 @@ def train_flow(cfg:DictConfig):
         log_mlflow_info(logger, train_run)
         run_id = train_run.info.run_id
         
-        model_uri = f"runs:/{run_id}/{artifact_path}"
+        model_uri = f"runs:/{run_id}"
         mlflow_run_url = build_and_log_mlflow_url(logger, train_run)
-        
+
         mlflow.set_tags(tags=mlflow_train_cfg.exp_tags)
         mlflow.log_params(hparams)
         mlflow.log_artifact(report_path)

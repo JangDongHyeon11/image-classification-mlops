@@ -17,4 +17,3 @@ SQLAlchemy==1.4.49
 psycopg2-binary==2.9.7
 torchvision==0.15.2
 deepchecks[vision]==0.17.4
-ray[client,data,train,tune,serve]==2.9.3

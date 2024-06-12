@@ -1,5 +1,5 @@
 activation: softmax
-artifact_path: /jang/model
+artifact: Jang
 classes:
 - butterfly
 - cat
@@ -21,6 +21,7 @@ drift_detection:
   uae_encoding_dims: 128
   uae_model_suffix: _uae
   uae_name: uae_v1
+email: ex@ex.com
 input_size:
   h: 50
   w: 50

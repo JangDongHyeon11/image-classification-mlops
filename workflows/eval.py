@@ -15,19 +15,20 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5050")
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 @flow(name='eval_flow')
-def eval_flow(cfg: Dict[str, Any]):
-    print(cfg)
+def eval_flow(cfg: DictConfig):
+  
     logger = get_run_logger()
     eval_cfg = cfg.eval
+    model_cfg= cfg.model
     model_name= cfg.model.model_name
     metadata_file_path= cfg.model.model_metadata_file_path
-    mlflow_eval_cfg = cfg.eval.mlflow
+    mlflow_eval_cfg = eval_cfg.mlflow
     ds_cfg = cfg.dataset
     
 
     model,model_version=load_model(model_name)
-    with open(metadata_file_path,'r') as f:
-        model_cfg = yaml.safe_load(f)
+    # with open(metadata_file_path,'r') as f:
+    #     model_cfg = yaml.safe_load(f)
     
     input_shape = (model_cfg.input_size.h, model_cfg.input_size.w)
     # 데이터 불러오기
@@ -40,7 +41,7 @@ def eval_flow(cfg: Dict[str, Any]):
         log_mlflow_info(logger, eval_run)
         eval_run_url = build_and_log_mlflow_url(logger, eval_run)
         # Store model config
-        mlflow.log_artifact(metadata_file_path)
+        # mlflow.log_artifact(metadata_file_path)
         evaluate_model(model, model_cfg.classes, repository_path, dataset_annotation_df,
                        subset=eval_cfg.subset, img_size=input_shape, classifier_type=model_cfg.classifier_type)       
         

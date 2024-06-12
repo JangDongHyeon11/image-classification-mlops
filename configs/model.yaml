@@ -4,7 +4,8 @@ model:
   input_size:
     w: 50
     h: 50
-  artifact_path: /jang/model
+  artifact: Jang
+  email: ex@ex.com
   classes:
     - butterfly
     - cat

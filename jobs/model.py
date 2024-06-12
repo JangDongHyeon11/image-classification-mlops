@@ -105,8 +105,6 @@ def train_model(model: tf.keras.models.Model, classes: List[str], repository_pat
 
 
 
-
-
 @task(name='save_model')
 def save_model(model: tf.keras.models.Model, model_cfg: Dict[str, Union[str, List[str], List[int]]]):
     logger = get_run_logger()
@@ -125,6 +123,7 @@ def save_model(model: tf.keras.models.Model, model_cfg: Dict[str, Union[str, Lis
     
     mlflow.log_artifact(model_dir)
     mlflow.log_artifact(metadata_save_path)
+    mlflow.tensorflow.log_model(model, artifact_path="model")
     
     return model_dir, metadata_save_path
 
@@ -133,6 +132,7 @@ def upload_model(model_uri: str,model_dir: str,MLFLOW_TRACKING_URI: str , metada
     model_name = os.path.split(model_dir)[-1]
     metadata_file_name = os.path.split(metadata_file_path)[-1]
     logger = get_run_logger()
+    
     model_details = mlflow.register_model(model_uri=model_uri, name=model_name)
     logger.info("Registered model")
 
@@ -150,7 +150,9 @@ def load_model(model_name: str):
     logger = get_run_logger()
     logger.info(f'Loading the model from {model_name}')
     
-    model = mlflow.pyfunc.load_model(model_uri=f"models:/{model_name}/Staging")
+    model = mlflow.tensorflow.load_model(model_uri=f"models:/{model_name}/4/model")
+    # model = mlflow.pyfunc.load_model(model_uri=f"runs:/bb1787ec35e742148e70296009ad8536/classifier_model_v1")
+    
     latest_versions_metadata = mlflow_client.get_latest_versions(name=model_name)
     model_version = latest_versions_metadata[0].version
     # latest_model_version_metadata = mlflow_client.get_model_version(
